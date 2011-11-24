@@ -1,19 +1,36 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Text.HTML.SanitizeXSS
-    ( sanitize
+    ( -- * Default HTML sanitizers.
+      sanitize
     , sanitizeBalance
     , sanitizeXSS
+
+    -- * Helper functions to build your own sanitizer.
     , filterTags
+    , sanitizeWith
+    , balance
+
+    -- * Default tag sanitizer.
     , safeTags
+
+    -- * Internal helper functions that can be composed into custom filters.
+    , safeTagName
+    , safeAttribute
+    , sanitizeURIAttribute
+    , sanitizeStyleAttribute
+    , sanitizeCSS
+    , sanitaryURI
     ) where
 
 import Text.HTML.SanitizeXSS.Css
 
 import Text.HTML.TagSoup
 
+import Control.Monad
 import Data.Set (Set(), member, notMember, (\\), fromList)
 import Data.Char ( toLower )
 import Data.Text (Text)
+import Data.Maybe (mapMaybe)
 import qualified Data.Text as T
 
 import Network.URI ( parseURIReference, URI (..),
@@ -21,7 +38,6 @@ import Network.URI ( parseURIReference, URI (..),
 import Codec.Binary.UTF8.String ( encodeString )
 
 import qualified Data.Map as Map
-import Data.Maybe (catMaybes)
 
 
 
@@ -31,18 +47,40 @@ sanitize = sanitizeXSS
 
 -- | alias of sanitize function
 sanitizeXSS :: Text -> Text
-sanitizeXSS = filterTags safeTags
+sanitizeXSS = filterTags (mapMaybe safeTags)
 
 -- | same as sanitize but makes sure there are no lone closing tags. See README.md <http://github.com/gregwebs/haskell-xss-sanitize> for more details
 sanitizeBalance :: Text -> Text
-sanitizeBalance = filterTags (balance Map.empty . safeTags)
+sanitizeBalance = filterTags (balance Map.empty . mapMaybe safeTags)
+
+
+
+
 
 -- | insert custom tag filtering. Don't forget to compose your filter with safeTags!
 filterTags :: ([Tag Text] -> [Tag Text]) -> Text -> Text
 filterTags f = renderTagsOptions renderOptions {
     optMinimize = \x -> x `elem` ["br","img"] -- <img><img> converts to <img />, <a/> converts to <a></a>
-  } .  f . canonicalizeTags . parseTags
+  } . f . canonicalizeTags . parseTags
 
+-- | default tag and attribute sanitizer based on whitelist.
+safeTags :: Tag Text -> Maybe (Tag Text)
+safeTags = sanitizeWith safeTagName (sanitizeStyleAttribute <=< sanitizeURIAttribute <=< safeAttribute)
+
+-- | sanitize a tag and attributes using two custom filters.
+sanitizeWith
+  :: (Text -> Bool)                             -- ^ The tag name sanitizer.
+  -> (Attribute Text -> Maybe (Attribute Text)) -- ^ The attribute sanitizer.
+  -> Tag Text -> Maybe (Tag Text)
+sanitizeWith ft _ t@(TagClose name)
+  | ft name   = Just t
+  | otherwise = Nothing
+sanitizeWith ft fa (TagOpen name attributes)
+  | ft name   = Just (TagOpen name (mapMaybe fa attributes))
+  | otherwise = Nothing
+sanitizeWith _ _ t = Just t
+
+-- | make sure all tags are properly balanced.
 balance :: Map.Map Text Int -> [Tag Text] -> [Tag Text]
 balance m [] =
     concatMap go $ Map.toList m
@@ -67,29 +105,29 @@ balance m (TagOpen name as : tags) =
             Just i -> Map.insert name (i + 1) m
 balance m (t:ts) = t : balance m ts
 
--- | Filters out any usafe tags and attributes. Use with filterTags to create a custom filter.
-safeTags :: [Tag Text] -> [Tag Text]
-safeTags [] = []
-safeTags (t@(TagClose name):tags)
-    | safeTagName name = t : safeTags tags
-    | otherwise = safeTags tags
-safeTags (TagOpen name attributes:tags)
-  | safeTagName name = TagOpen name
-      (catMaybes $ map sanitizeAttribute $ filter safeAttribute attributes) : safeTags tags
-  | otherwise = safeTags tags
-safeTags (t:tags) = t:safeTags tags
-
+-- | whitelist based safety check for tag name.
 safeTagName :: Text -> Bool
 safeTagName tagname = tagname `member` sanitaryTags
 
-safeAttribute :: (Text, Text) -> Bool
-safeAttribute (name, value) = name `member` sanitaryAttributes &&
-  (name `notMember` uri_attributes || sanitaryURI value)
+-- | whitelist based sanitizer for attribute names.
+safeAttribute :: (Text, Text) -> Maybe (Text, Text)
+safeAttribute (name, value) =
+  if name `member` sanitaryAttributes
+  then Just (name, value)
+  else Nothing
 
-sanitizeAttribute :: (Text, Text) -> Maybe (Text, Text)
-sanitizeAttribute ("style", value) =
+-- | whitelist based sanitizer for attribute URI values.
+sanitizeURIAttribute :: (Text, Text) -> Maybe (Text, Text)
+sanitizeURIAttribute (name, value) =
+  if name `notMember` uri_attributes || sanitaryURI value
+  then Just (name, value)
+  else Nothing
+
+-- | whitelist based sanitizer inline CSS within style attributes.
+sanitizeStyleAttribute :: (Text, Text) -> Maybe (Text, Text)
+sanitizeStyleAttribute ("style", value) =
   let css = sanitizeCSS value in if T.null css then Nothing else Just ("style", css)
-sanitizeAttribute attr = Just attr
+sanitizeStyleAttribute attr = Just attr
          
 
 -- | Returns @True@ if the specified URI is not a potential security risk.
@@ -100,6 +138,7 @@ sanitaryURI u =
                 ((map toLower $ init $ uriScheme p) `member` safeURISchemes)
      Nothing -> False
 
+-------------------------------------------------------------------------------
 
 -- | Escape unicode characters in a URI.  Characters that are
 -- already valid in a URI, including % and ?, are left alone.

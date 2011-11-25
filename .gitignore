@@ -2,4 +2,3 @@
 *.o
 dist
 # executable
-test

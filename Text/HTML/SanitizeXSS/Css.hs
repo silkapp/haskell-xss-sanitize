@@ -10,22 +10,21 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Attoparsec.Text
 import Data.Text.Lazy.Builder (toLazyText)
-import Data.Text.Lazy (toStrict)
 import Data.Set (member, fromList, Set)
 import Data.Char (isDigit)
 import Control.Applicative ((<|>), pure)
 import Text.CSS.Render (renderAttrs)
 import Text.CSS.Parse (parseAttrs)
 import Prelude hiding (takeWhile)
+import qualified Data.Text.Lazy as L
 
 -- import FileLocation (debug, debugM)
 
 
 -- this is a direct translation from sanitizer.py, except
 --   sanitizer.py filters out url(), but this is redundant
-sanitizeCSS :: Text -> Text
-sanitizeCSS css = toStrict . toLazyText .
-    renderAttrs . filter isSanitaryAttr . filterUrl $ parseAttributes
+sanitizeCSS :: L.Text -> L.Text
+sanitizeCSS = toLazyText . renderAttrs . filter isSanitaryAttr . filterUrl . parseAttributes . L.toStrict
   where
     filterUrl :: [(Text,Text)] -> [(Text,Text)]
     filterUrl = map filterUrlAttribute
@@ -46,7 +45,7 @@ sanitizeCSS css = toStrict . toLazyText .
           return $ T.append (T.pack pre) rest
 
 
-    parseAttributes = case parseAttrs css of
+    parseAttributes css = case parseAttrs css of
       Left _ -> []
       Right as -> as
 

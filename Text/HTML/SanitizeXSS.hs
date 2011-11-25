@@ -29,9 +29,9 @@ import Text.HTML.TagSoup
 import Control.Monad
 import Data.Set (Set(), member, notMember, (\\), fromList)
 import Data.Char ( toLower )
-import Data.Text (Text)
+import Data.Text.Lazy (Text)
 import Data.Maybe (mapMaybe)
-import qualified Data.Text as T
+import qualified Data.Text.Lazy as T
 
 import Network.URI ( parseURIReference, URI (..),
                      isAllowedInURI, escapeURIString, uriScheme )

@@ -1,5 +1,5 @@
 name:            xss-sanitize
-version:         0.3.2.99
+version:         0.3.2.100
 license:         BSD3
 license-file:    LICENSE
 author:          Greg Weber <greg@gregweber.info>
@@ -18,9 +18,9 @@ library
                     , tagsoup >= 0.12.2
                     , utf8-string >= 0.3
                     , network >= 2
-                    , css-text >= 0.1 && < 0.2
+                    , css-text >= 0.1.1 && < 0.2
                     , text                      >= 0.11     && < 0.12
-                    , attoparsec-text           >= 0.8.5.1  && < 0.9
+                    , attoparsec >= 0.10 && < 0.11
 
 
     exposed-modules: Text.HTML.SanitizeXSS

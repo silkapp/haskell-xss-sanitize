@@ -61,6 +61,7 @@ sanitizeBalance = filterTags (balance Map.empty . mapMaybe safeTags)
 filterTags :: ([Tag Text] -> [Tag Text]) -> Text -> Text
 filterTags f = renderTagsOptions renderOptions {
     optMinimize = \x -> x `elem` ["br","img"] -- <img><img> converts to <img />, <a/> converts to <a></a>
+  , optEmptyAttr = False
   } . f . canonicalizeTags . parseTags
 
 -- | default tag and attribute sanitizer based on whitelist.

@@ -9,7 +9,7 @@ description:     run untrusted HTML through Text.HTML.SanitizeXSS.sanitizeXSS to
 
 category:        Web
 stability:       Stable
-cabal-version:   >= 1.8 
+cabal-version:   >= 1.8
 build-type:      Simple
 homepage:        http://github.com/gregwebs/haskell-xss-sanitize
 
@@ -20,7 +20,7 @@ library
                     , network >= 2
                     , css-text >= 0.1.1 && < 0.2
                     , text                      >= 0.11     && < 1.2
-                    , attoparsec >= 0.10 && < 0.11
+                    , attoparsec >= 0.10 && < 0.12
 
 
     exposed-modules: Text.HTML.SanitizeXSS
@@ -43,5 +43,5 @@ test-suite test
 
 
 source-repository head
-  type:     git 
+  type:     git
   location: http://github.com/gregwebs/haskell-xss-sanitize.git

@@ -13,11 +13,14 @@ cabal-version:   >= 1.8
 build-type:      Simple
 homepage:        http://github.com/gregwebs/haskell-xss-sanitize
 
+flag network-uri
+  description: Get Network.URI from the network-uri package
+  default: True
+
 library
     build-depends:  base == 4.*, containers
                     , tagsoup >= 0.13.100
                     , utf8-string >= 0.3
-                    , network >= 2
                     , css-text >= 0.1.1 && < 0.2
                     , text                      >= 0.11     && < 1.2
                     , attoparsec >= 0.10 && < 0.13
@@ -26,6 +29,10 @@ library
     exposed-modules: Text.HTML.SanitizeXSS
     other-modules:   Text.HTML.SanitizeXSS.Css
     ghc-options:     -Wall
+    if flag(network-uri)
+      build-depends: network-uri == 2.6.*
+    else
+      build-depends: network >= 2 && < 2.6
 
 test-suite test
     type: exitcode-stdio-1.0
@@ -34,13 +41,15 @@ test-suite test
     build-depends:   base  >= 4        && < 5, containers
                     , tagsoup >= 0.13.100
                     , utf8-string >= 0.3
-                    , network >= 2
                     , css-text >= 0.1 && < 0.2
                     , text                      >= 0.11     && < 1.2
                     , attoparsec-text           >= 0.8.5.1  && < 0.9
                     , hspec
                     , HUnit >= 1.2
-
+    if flag(network-uri)
+      build-depends: network-uri == 2.6.*
+    else
+      build-depends: network >= 2 && < 2.6
 
 source-repository head
   type:     git

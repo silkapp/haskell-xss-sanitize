@@ -1,5 +1,5 @@
 name:            xss-sanitize
-version:         0.3.2.106
+version:         0.3.2.107
 license:         BSD3
 license-file:    LICENSE
 author:          Greg Weber <greg@gregweber.info>
@@ -23,7 +23,7 @@ library
                     , utf8-string >= 0.3
                     , css-text >= 0.1.1 && < 0.2
                     , text                      >= 0.11     && < 1.3
-                    , attoparsec >= 0.10 && < 0.13
+                    , attoparsec >= 0.10 && < 0.14
 
 
     exposed-modules: Text.HTML.SanitizeXSS
@@ -35,6 +35,7 @@ library
       build-depends: network >= 2 && < 2.6
 
 test-suite test
+    buildable: False
     type: exitcode-stdio-1.0
     main-is: test/main.hs
     cpp-options: -DTEST
@@ -43,7 +44,7 @@ test-suite test
                     , utf8-string >= 0.3
                     , css-text >= 0.1 && < 0.2
                     , text                      >= 0.11     && < 1.3
-                    , attoparsec-text           >= 0.8.5.1  && < 0.9
+                    , attoparsec < 0.14
                     , hspec
                     , HUnit >= 1.2
     if flag(network-uri)
